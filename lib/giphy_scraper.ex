@@ -1,6 +1,12 @@
 defmodule GiphyScraper do
   @moduledoc """
-  Documentation for `GiphyScraper`.
+  Entry point for `GiphyScraper`.
   """
+  use Application
+
   defdelegate search(query), to: GiphyScraper.Scraper
+
+  def start(_type, _args) do
+    GiphyScraper.Supervisor.start_link(name: MyFinch)
+  end
 end

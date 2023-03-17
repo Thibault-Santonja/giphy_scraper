@@ -14,11 +14,8 @@ defmodule GiphyScraper.MixProject do
   # Run "mix help compile.app" to learn about applications.
   def application do
     [
-      env: [giphy_api_key: System.get_env("GIPHY_API_KEY") || raise "Giphy API key is missing"],
       extra_applications: [:logger],
-      children: [
-        {Finch, name: MyFinch}
-      ]
+      mod: {GiphyScraper, []}
     ]
   end
 

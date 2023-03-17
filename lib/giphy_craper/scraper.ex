@@ -4,9 +4,10 @@ defmodule GiphyScraper.Scraper do
   """
 
   alias GiphyScraper.Type.GiphyImage
+  require Logger
 
   @giphy_search_endpoint "https://api.giphy.com/v1/gifs/search"
-  @giphy_api_key Application.get_env(:giphy_scraper, :giphy_api_key)
+  @giphy_api_key Application.compile_env(:giphy_scraper, :giphy_api_key)
 
   @doc """
   Search a gif.
@@ -32,21 +33,20 @@ defmodule GiphyScraper.Scraper do
 
   """
   @spec search(String.t) :: any() #{Atom, list(%GiphyImage{})}
-  def search(query) when is_binary(query) do
-    headers = [{"Accept", "application/json"}]
-    body = %{
-      q: query,
-      api_key: @giphy_api_key,
-      lang: "en",
-      limit: 15
-    } |> Jason.encode_to_iodata!()
+  @spec search(String.t, integer()) :: any() #{Atom, list(%GiphyImage{})}
+  def search(query, limit \\ 15)
 
-    Finch.start_link(name: MyFinch)
-    Finch.build(:get, @giphy_search_endpoint, headers, body) |> Finch.request(MyFinch)
+  def search(query, limit) when is_binary(query) do
+    query = "#{@giphy_search_endpoint}?api_key=#{@giphy_api_key}&limit=#{limit}&q#{query}"
+
+    Logger.info("Query : #{query}")
+
+    #Finch.start_link(name: MyFinch)
+    Finch.build(:get, query) |> Finch.request(GiphyScrapper.Finch)
   end
 
   @spec search(any) :: any() #{Atom, String.t}
-  def search(_) do
+  def search(_, _) do
     {:error, "Bad argument"}
   end
 
