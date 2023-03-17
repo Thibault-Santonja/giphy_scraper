@@ -31,31 +31,62 @@ defmodule GiphyScraper.Scraper do
         }
       ]
 
+      iex> GiphyScraper.search(query, limit)
+      [
+        %GiphyScraper.GiphyImage{
+          id: "some_id",
+          url: "url_to_gif",
+          username: "username of creator",
+          title: "SomeGif"
+        }
+      ]
+
   """
-  @spec search(String.t) :: any() #{Atom, list(%GiphyImage{})}
-  @spec search(String.t, integer()) :: any() #{Atom, list(%GiphyImage{})}
+  # {Atom, list(%GiphyImage{})}
+  @spec search(String.t()) :: any()
+  # {Atom, list(%GiphyImage{})}
+  @spec search(String.t(), integer()) :: any()
   def search(query, limit \\ 15)
 
   def search(query, limit) when is_binary(query) do
-    query = "#{@giphy_search_endpoint}?api_key=#{@giphy_api_key}&limit=#{limit}&q#{query}"
-
-    Logger.info("Query : #{query}")
-
-    #Finch.start_link(name: MyFinch)
-    Finch.build(:get, query) |> Finch.request(GiphyScrapper.Finch)
+    :get
+    |> Finch.build(get_query(query, limit))
+    |> Finch.request(GiphyScrapper.Finch)
+    |> decode_response()
   end
 
-  @spec search(any) :: any() #{Atom, String.t}
+  # {Atom, String.t}
+  @spec search(any) :: any()
   def search(_, _) do
     {:error, "Bad argument"}
   end
 
+  defp get_query(query, limit),
+    do: "#{@giphy_search_endpoint}?api_key=#{@giphy_api_key}&limit=#{limit}&q=#{query}"
+
+  defp decode_response({:ok, %Finch.Response{status: status, body: body}}) when status < 400 do
+    case Jason.decode(body) do
+      {:ok, %{"data" => giphies}} ->
+        {
+          :ok,
+          Enum.map(giphies, fn giphy ->
+            %GiphyImage{
+              id: giphy |> Map.get("id"),
+              url: giphy |> Map.get("url"),
+              username: giphy |> Map.get("username"),
+              title: giphy |> Map.get("title")
+            }
+          end)
+        }
+
+      error ->
+        error
+    end
+  end
+
+  defp decode_response({:ok, %Finch.Response{} = error}), do: {:error, error}
+  defp decode_response(error), do: error
+
   def image do
-    %GiphyImage{
-      id: "String.t",
-      url: "String.t",
-      username: "String.t",
-      title: "String.t"
-    }
   end
 end
